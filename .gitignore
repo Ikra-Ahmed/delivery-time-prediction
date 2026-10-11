@@ -1,0 +1,22 @@
+
+# Dataset files — download from Kaggle instead
+data/*.csv
+data/*.xlsx
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Jupyter Notebook temporary checkpoints
+.ipynb_checkpoints/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
