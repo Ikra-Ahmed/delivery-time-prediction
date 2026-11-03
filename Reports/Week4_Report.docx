@@ -1,0 +1,241 @@
+WEEK 4 REPORT
+Predictive Modeling and Optimization in Logistics Systems
+Project: Delivery Time Prediction for Logistics
+Predictive modelling using the Amazon Delivery Dataset
+Report detail	Description
+Dataset	Amazon Delivery Dataset (Kaggle)
+Original records	43,739
+Target variable	Delivery_Time (minutes)
+Models	Linear Regression and Random Forest
+Training records	34,991
+Testing records	8,748
+Best-performing model	Random Forest Regressor
+Best test result	MAE: 17.33 min; RMSE: 22.65 min; R²: 0.807
+
+1. Introduction and Problem Definition
+Delivery time is an important measure of logistics performance. It can vary according to distance, traffic, weather, vehicle type, delivery area and other operational factors. Estimating delivery duration can help logistics teams plan deliveries and identify orders that may need additional attention.
+The problem addressed in this project is to predict the time required to complete a delivery using the information available in the Amazon Delivery Dataset. Since the target variable, Delivery_Time, is a numerical value measured in minutes, this is a supervised regression problem.
+The objectives are to:
+⦁	Prepare the cleaned delivery dataset for machine learning.
+⦁	Train Linear Regression and Random Forest models.
+⦁	Compare model performance using MAE, RMSE and R².
+⦁	Validate the selected model using cross-validation.
+⦁	Identify features that contribute to model predictions.
+⦁	Suggest practical logistics improvements based on the analysis.
+2. Dataset and Features
+The project uses the Amazon Delivery Dataset from Kaggle. It contains 43,739 delivery records and information about delivery agents, locations, order timings, environmental conditions and delivery details.
+Feature	Type	Description
+Distance_km	Numerical	Calculated straight-line distance between store and delivery location
+Agent_Age	Numerical	Age of the delivery agent
+Agent_Rating	Numerical	Recorded delivery-agent rating
+Order_Hour	Numerical	Hour at which the order was placed
+Weather	Categorical	Weather condition during delivery
+Traffic	Categorical	Traffic condition
+Vehicle	Categorical	Vehicle used for delivery
+Area	Categorical	Delivery area classification
+Category	Categorical	Product category
+Delivery_Time	Target	Actual delivery duration in minutes
+
+Delivery_Time was used as the target variable, while the remaining selected columns were used as input features.
+3. Data Preparation
+The cleaned dataset prepared during Week 2 was used for model development. The target variable was separated from the input features, and the records were divided into training and testing sets using an 80:20 split.
+⦁	Training data: 34,991 records.
+⦁	Testing data: 8,748 records.
+Missing numerical values were handled using median imputation. Missing categorical values were handled using the most frequent value. Categorical features were converted into numerical form using One-Hot Encoding.
+A Scikit-learn pipeline was used to combine preprocessing and model training. The preprocessing steps were fitted on the training data only and then applied to the test data. This helps prevent information leakage from the test set.
+Preprocessing code:
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
+
+numeric_transformer = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="median"))
+])
+
+categorical_transformer = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("encoder", OneHotEncoder(handle_unknown="ignore"))
+])
+
+preprocessor = ColumnTransformer(transformers=[
+    ("num", numeric_transformer, numeric_features),
+    ("cat", categorical_transformer, categorical_features)
+])
+This approach ensures that the same preprocessing operations are applied consistently during training and prediction.
+4. Model Selection And Reasoning
+5.1 Linear Regression – Why was it selected?
+Linear Regression was selected as a baseline model because it is simple, easy to understand, and computationally efficient. It helps identify basic relationships between input features and delivery time. Its performance also provides a reference point for comparing more advanced models.
+
+5.2 Random Forest Regressor – Why was it selected?
+Random Forest Regressor was selected because delivery time can be influenced by several factors that may have complex and non-linear relationships. It combines multiple decision trees and can capture patterns and interactions between features such as distance, traffic, and weather. It also provides feature-importance values that help identify influential input features.
+
+5.3 Reason for Comparing Both Models
+Both models were selected to compare a simple linear approach with a more flexible machine learning approach. This comparison helps determine whether a model capable of capturing complex patterns can improve delivery-time predictions..
+5. Implementation
+Python, Pandas and Scikit-learn were used for model development. The implementation extracts below follow the model-development steps and code patterns supplied for Week 4.
+5.1 Training the models
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.pipeline import Pipeline
+
+linear_model = Pipeline(steps=[
+    ("preprocessor", preprocessor),
+    ("model", LinearRegression())
+])
+
+rf_model = Pipeline(steps=[
+    ("preprocessor", preprocessor),
+    ("model", RandomForestRegressor(
+        n_estimators=100,
+        random_state=42,
+        n_jobs=-1
+    ))
+])
+
+linear_model.fit(X_train, y_train)
+rf_model.fit(X_train, y_train)
+Both models were trained using the same training data and preprocessing pipeline to make their performance comparable.
+5.2 Model evaluation
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score
+)
+import numpy as np
+
+predictions = rf_model.predict(X_test)
+mae = mean_absolute_error(y_test, predictions)
+rmse = np.sqrt(mean_squared_error(y_test, predictions))
+r2 = r2_score(y_test, predictions)
+
+print("MAE:", mae)
+print("RMSE:", rmse)
+print("R2 Score:", r2)
+The evaluation metrics measure prediction error and how well the model explains variation in delivery time.
+5.3 Cross-validation
+from sklearn.model_selection import cross_val_score
+
+scores = cross_val_score(
+    rf_model,
+    X_train,
+    y_train,
+    cv=3,
+    scoring="neg_mean_absolute_error",
+    n_jobs=1
+)
+
+print("Cross-validation MAE:", -scores)
+print("Average MAE:", -scores.mean())
+Three-fold cross-validation was used to check whether the Random Forest model performed consistently across different training and validation subsets.
+5.4 Feature importance
+feature_names = (
+    rf_model.named_steps["preprocessor"]
+    .get_feature_names_out()
+)
+
+importances = (
+    rf_model.named_steps["model"]
+    .feature_importances_
+)
+
+importance_df = pd.DataFrame({
+    "Feature": feature_names,
+    "Importance": importances
+})
+
+importance_df = importance_df.sort_values(
+    by="Importance",
+    ascending=False
+)
+
+print(importance_df.head(15))
+Feature importance was extracted from the trained Random Forest model to identify which encoded input features contributed most to its predictions.
+6. Evaluation and Validation
+6.1 Evaluation metrics
+Metric	Meaning
+MAE	Measures the average absolute difference between actual and predicted delivery times. Lower values indicate better predictions.
+RMSE	Measures prediction errors while giving greater importance to larger errors. Lower values indicate better performance.
+R²	Measures how much variation in delivery time is explained by the model. A higher value indicates a better fit.
+
+6.2 Model comparison results
+Model	MAE (minutes)	RMSE (minutes)	R² Score
+Linear Regression	25.34	32.02	0.615
+Random Forest	17.33	22.65	0.807
+
+Random Forest performed better than Linear Regression across all three metrics. Its MAE of 17.33 minutes indicates that its predictions differed from actual delivery times by an average absolute amount of approximately 17.33 minutes on the test set.
+The R² score of 0.807 indicates that the model explained approximately 80.7% of the variation in delivery time in the test data. This is not the same as 80.7% prediction accuracy.
+Based on these results, Random Forest was selected as the better-performing model for this project.
+6.3 Cross-validation results
+Fold	MAE (minutes)
+Fold 1	17.83
+Fold 2	17.55
+Fold 3	17.80
+Average	17.73
+
+The average cross-validation MAE was 17.73 minutes. The three scores were close to one another, suggesting reasonably consistent performance across the folds.
+No hyperparameter search was performed. The Random Forest model used 100 trees as a practical starting configuration for this project. Further tuning can be carried out in future work.
+7. Model Insights
+7.1 Actual vs Predicted Delivery Time
+ 
+
+The graph compares actual delivery times with the values predicted by the Random Forest model. Points closer to the diagonal reference line indicate predictions closer to the actual delivery times. The graph provides a visual check of model performance alongside the numerical evaluation metrics.
+7.2 Feature Importance
+ 
+
+The following table shows the 15 most important encoded features reported by the Random Forest model.
+Feature	Importance
+Category – Grocery	0.233157
+Agent Rating	0.173163
+Distance	0.128852
+Traffic – Low	0.096919
+Agent Age	0.095105
+Weather – Sunny	0.056985
+Weather – Cloudy	0.042932
+Weather – Fog	0.041060
+Vehicle – Motorcycle	0.023705
+Order Hour	0.013168
+Traffic – Medium	0.012112
+Traffic – Jam	0.008833
+Area – Metropolitian	0.005260
+Area – Semi-Urban	0.003664
+Category – Toys	0.003604
+
+7.3 Key observations
+⦁	Grocery was the highest-ranked individual encoded feature in the reported importance output.
+⦁	Agent rating and distance also had relatively high feature-importance values.
+⦁	Traffic and weather categories contributed to the model’s predictions.
+⦁	These values represent the model’s use of individual encoded features. They do not establish causation or show whether a feature increases or decreases delivery time.
+8. Optimization Strategies
+The following recommendations are proposals based on the dataset analysis and model results. They were not tested as live operational changes.
+Strategy	Model/data insight it comes from	Recommended action	Expected benefit	Limitations
+Traffic-aware planning	Traffic categories were included in the model and showed different delivery-time patterns in the earlier analysis	Consider traffic conditions when estimating delivery duration and planning dispatch	More realistic delivery-time estimates and better planning	Historical traffic categories may not represent current road conditions
+Weather-aware planning	Weather categories contributed to predictions	Consider weather conditions when preparing delivery schedules and ETAs	Better preparation for potentially difficult delivery conditions	Weather effects were not tested through controlled experiments
+Resource allocation by volume	Earlier analysis showed different numbers of delivery records across areas	Review delivery demand by area when planning delivery capacity	Better alignment between resources and recorded demand	Record counts do not directly measure staffing requirements
+Grocery/category investigation	Grocery had the highest individual encoded feature importance	Examine Grocery deliveries further to understand their operational patterns	May reveal category-specific planning needs	Importance does not prove that Grocery orders take longer
+High-ETA order review	The model can estimate delivery duration for individual records	Flag unusually high predicted delivery times for human review	Helps identify orders that may need additional attention	Predictions are estimates, not confirmed delays
+Agent and operational factors	Agent age and rating appeared among important features	Review operational processes and provide appropriate support or training where needed	May help identify areas for operational improvement	Do not use these features to rank or penalise individual agents; importance does not establish individual performance or causation
+
+9. Limitations and Future Work
+9.1 Limitations
+1.	Dataset coverage: The model was trained using one historical dataset, so its performance may differ on new delivery data.
+2.	Missing operational information: The dataset does not contain promised delivery times, live GPS routes, actual road conditions or transportation costs. Therefore, official delay rates, on-time rates and cost savings cannot be calculated.
+3.	Geographic data quality: Suspicious distance values were identified during preprocessing and treated as missing. The calculated distance is a straight-line estimate, not an actual road route.
+4.	Model tuning: Extensive hyperparameter tuning was not performed, and only two models were compared in the initial implementation.
+5.	Interpretation: Feature importance indicates how the model used the inputs; it does not prove cause and effect.
+6.	Validation approach: A random train-test split was used. A time-based split would provide another way to evaluate performance on later deliveries.
+9.2 Future Work
+The project can be improved in the following ways:
+⦁	Applying RandomizedSearchCV or GridSearchCV to tune Random Forest parameters.
+⦁	Comparing Random Forest with Decision Tree and Gradient Boosting models.
+⦁	Testing a time-based train-test split.
+⦁	Integrating live traffic and GPS route information, if available.
+⦁	Collecting transportation cost data for a separate cost-analysis study.
+10. Conclusion
+This project developed and compared Linear Regression and Random Forest models to predict delivery time using the Amazon Delivery Dataset. Random Forest performed better, achieving an MAE of 17.33 minutes, RMSE of 22.65 minutes and R² score of 0.807 on the test data. Cross-validation showed reasonably consistent results, while feature-importance analysis highlighted several relevant delivery-related inputs. The findings provide a basis for delivery-time estimation and practical logistics planning recommendations, although further testing and additional operational data would be needed before real-world deployment.
+References
+1. Sujal Suthar, Amazon Delivery Dataset, Kaggle: https://www.kaggle.com/datasets/sujalsuthar/amazon-delivery-dataset
+2. Scikit-learn Documentation, Pipeline: https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html
+3. Scikit-learn Documentation, ColumnTransformer: https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html
+4. Scikit-learn Documentation, RandomForestRegressor: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html
+5. Scikit-learn Documentation, Model Evaluation: https://scikit-learn.org/stable/modules/model_evaluation.html
